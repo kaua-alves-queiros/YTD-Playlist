@@ -1,7 +1,7 @@
 {
   "name": "ytd",
   "productName": "YTD Playlist",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Baixador de playlists do YouTube (MP3/MP4) para Windows, macOS e Linux",
   "author": "kaua-alves-queiros",
   "license": "MIT",
