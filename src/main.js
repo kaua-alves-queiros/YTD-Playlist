@@ -3,6 +3,7 @@ import { spawn } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { Readable } from 'node:stream';
+import { createHash } from 'node:crypto';
 import { fileURLToPath } from 'node:url';
 import ffmpegStatic from 'ffmpeg-static';
 import { ytdlpPath, downloadYtDlp, run, killTree, buildDownloadArgs } from './ytdlp.js';
@@ -497,14 +498,43 @@ ipcMain.handle('library-scan', async (_e, root) => {
 });
 
 // ytd-media://file/<caminho codificado> — com suporte a Range (para poder avançar na música).
+// ---------- capas (extraídas com o ffmpeg) ----------
+const IMAGE_EXT = { '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.png': 'image/png', '.webp': 'image/webp' };
+const coversDir = path.join(app.getPath('userData'), 'covers');
+allowedRoots.add(coversDir);
+const coverJobs = new Map();
+
+ipcMain.handle('get-cover', (_e, file) => {
+  file = path.resolve(String(file || ''));
+  if (![...allowedRoots].some((r) => isInside(file, r)) || !fs.existsSync(file)) return null;
+  const st = fs.statSync(file);
+  const key = createHash('sha1').update(file + '|' + st.size + '|' + st.mtimeMs).digest('hex');
+  const out = path.join(coversDir, key + '.jpg');
+  if (fs.existsSync(out)) return out;
+  if (fs.existsSync(out + '.none')) return null; // já tentamos: arquivo sem capa
+  if (coverJobs.has(key)) return coverJobs.get(key);
+  fs.mkdirSync(coversDir, { recursive: true });
+  const isVideo = (MEDIA_EXT[path.extname(file).toLowerCase()] || '').startsWith('video/');
+  // MP3: capa embutida. Vídeo: um quadro aos 10s.
+  const args = isVideo
+    ? ['-y', '-ss', '10', '-i', file, '-frames:v', '1', '-vf', 'scale=640:-2', out]
+    : ['-y', '-i', file, '-an', '-frames:v', '1', '-vf', 'scale=640:-2', out];
+  const p = run(ffmpeg, ['-hide_banner', '-loglevel', 'error', ...args], process.env)
+    .then(() => (fs.existsSync(out) ? out : (fs.writeFileSync(out + '.none', ''), null)))
+    .catch(() => null)
+    .finally(() => coverJobs.delete(key));
+  coverJobs.set(key, p);
+  return p;
+});
+
 protocol.registerSchemesAsPrivileged([
-  { scheme: 'ytd-media', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true } },
+  { scheme: 'ytd-media', privileges: { standard: true, secure: true, stream: true, supportFetchAPI: true, corsEnabled: true } },
 ]);
 
 function serveMedia(request) {
   const u = new URL(request.url);
   const file = path.resolve(decodeURIComponent(u.pathname.slice(1)));
-  const type = MEDIA_EXT[path.extname(file).toLowerCase()];
+  const type = MEDIA_EXT[path.extname(file).toLowerCase()] || IMAGE_EXT[path.extname(file).toLowerCase()];
   if (!type || ![...allowedRoots].some((r) => isInside(file, r)) || !fs.existsSync(file)) {
     return new Response('not found', { status: 404 });
   }
@@ -520,14 +550,14 @@ function serveMedia(request) {
     return new Response(Readable.toWeb(fs.createReadStream(file, { start, end })), {
       status: 206,
       headers: {
-        'Content-Type': type, 'Accept-Ranges': 'bytes',
+        'Content-Type': type, 'Accept-Ranges': 'bytes', 'Access-Control-Allow-Origin': '*',
         'Content-Length': String(end - start + 1), 'Content-Range': `bytes ${start}-${end}/${size}`,
       },
     });
   }
   return new Response(Readable.toWeb(fs.createReadStream(file)), {
     status: 200,
-    headers: { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Content-Length': String(size) },
+    headers: { 'Content-Type': type, 'Accept-Ranges': 'bytes', 'Access-Control-Allow-Origin': '*', 'Content-Length': String(size) },
   });
 }
 

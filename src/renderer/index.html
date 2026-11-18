@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; img-src 'self' https://*.ytimg.com data:; media-src ytd-media:; style-src 'self'; script-src 'self'" />
+        content="default-src 'self'; img-src 'self' https://*.ytimg.com ytd-media: data:; media-src ytd-media:; style-src 'self'; script-src 'self'" />
   <title>YTD Playlist</title>
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -185,10 +185,13 @@
   <div id="toast" class="toast" role="status"></div>
 
   <footer id="player" class="player" hidden>
-    <video id="media" class="pvideo" playsinline hidden></video>
+    <video id="media" class="pvideo" playsinline hidden crossorigin="anonymous"></video>
     <div class="pinfo">
-      <div id="pTitle" class="ptitle"></div>
-      <div id="pSub" class="psub"></div>
+      <button type="button" id="pCoverBtn" class="pcover" title="Tela cheia (F)"><img id="pCover" alt="" hidden /><span>♪</span></button>
+      <div class="pinfo-t">
+        <div id="pTitle" class="ptitle"></div>
+        <div id="pSub" class="psub"></div>
+      </div>
     </div>
     <div class="pcenter">
       <div class="pbtns">
@@ -205,11 +208,69 @@
       </div>
     </div>
     <div class="pvol">
+      <button type="button" id="pMixer" class="ghost" title="Mixer / equalizador">🎚</button>
+      <button type="button" id="pFull" class="ghost" title="Tela cheia (F)">⛶</button>
       <button type="button" id="pMute" class="ghost" title="Mudo">🔊</button>
       <input type="range" id="pVol" min="0" max="100" value="80" />
     </div>
   </footer>
 
+  <!-- ===== Mixer ===== -->
+  <div id="mixer" class="mixer" hidden>
+    <div class="mx-head">
+      <b>🎚 Mixer</b>
+      <label class="check"><input type="checkbox" id="mxOn" checked /> Ligado</label>
+      <select id="mxPreset" title="Presets"></select>
+      <button type="button" id="mxReset">Zerar</button>
+      <button type="button" id="mxClose" class="ghost" title="Fechar">✕</button>
+    </div>
+    <div class="mx-body">
+      <div class="mx-col mx-side">
+        <span class="mx-val" id="mxPreVal">0 dB</span>
+        <input type="range" class="vslider" id="mxPre" min="-12" max="12" step="0.5" value="0" />
+        <span class="mx-lbl">Pré-amp</span>
+      </div>
+      <div class="mx-bands" id="mxBands"></div>
+    </div>
+    <div class="mx-foot">
+      <span class="mx-lbl">E</span>
+      <input type="range" id="mxBal" min="-1" max="1" step="0.05" value="0" />
+      <span class="mx-lbl">D</span>
+      <span class="mx-val" id="mxBalVal">Centro</span>
+    </div>
+  </div>
+
+  <!-- ===== Player em tela cheia ===== -->
+  <div id="fs" class="fs" hidden>
+    <div class="fs-bg"><img id="fsBg" alt="" /></div>
+    <canvas id="fsCanvas"></canvas>
+    <div class="fs-center" id="fsCenter">
+      <div class="fs-disc" id="fsDisc"><img id="fsCover" alt="" hidden /><span>♪</span></div>
+    </div>
+    <div class="fs-top">
+      <button type="button" id="fsStyle" class="fs-btn" title="Estilo do espectro (V)">◎ Circular</button>
+      <button type="button" id="fsMixer" class="fs-btn" title="Mixer">🎚 Mixer</button>
+      <button type="button" id="fsClose" class="fs-btn" title="Sair (Esc)">✕</button>
+    </div>
+    <div class="fs-bottom">
+      <div class="fs-title" id="fsTitle"></div>
+      <div class="fs-sub" id="fsSub"></div>
+      <div class="fs-seek">
+        <span id="fsCur">0:00</span>
+        <input type="range" id="fsSeek" min="0" max="1000" value="0" />
+        <span id="fsDur">0:00</span>
+      </div>
+      <div class="fs-ctrl">
+        <button type="button" id="fsShuffle" class="fs-ic" title="Aleatório">🔀</button>
+        <button type="button" id="fsPrev" class="fs-ic" title="Anterior">⏮</button>
+        <button type="button" id="fsPlay" class="fs-play" title="Tocar/pausar">▶</button>
+        <button type="button" id="fsNext" class="fs-ic" title="Próxima">⏭</button>
+        <button type="button" id="fsRepeat" class="fs-ic" title="Repetir">🔁</button>
+      </div>
+    </div>
+  </div>
+
   <script src="renderer.js"></script>
+  <script src="fx.js"></script>
 </body>
 </html>

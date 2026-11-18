@@ -10,6 +10,7 @@ contextBridge.exposeInMainWorld('ytd', {
   savedRemove: (id) => ipcRenderer.invoke('saved-remove', id),
   libraryScan: (root) => ipcRenderer.invoke('library-scan', root),
   mediaUrl: (p) => 'ytd-media://file/' + encodeURIComponent(p),
+  getCover: (p) => ipcRenderer.invoke('get-cover', p),
   chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
   openPath: (p) => ipcRenderer.invoke('open-path', p),
   openExternal: (url) => ipcRenderer.invoke('open-external', url),

@@ -33,6 +33,8 @@ Para Windows, macOS e Linux.
 | ★ **Playlists salvas** | Guarde suas favoritas. Para atualizar, é só baixar de novo: só as músicas novas são baixadas. |
 | ⬇ **Fila de downloads** | Mande várias playlists de uma vez e acompanhe tudo numa página própria. Você escolhe quantas baixam ao mesmo tempo. |
 | 🎧 **Biblioteca + player** | Ouça o que já baixou sem sair do app: aleatório, repetir, barra de tempo, volume e teclas de mídia do teclado. |
+| 🌌 **Player em tela cheia** | Capa girando como vinil, espectro animado em três estilos (circular, barras e onda), partículas no grave e fundo com a capa desfocada. Atalhos: `F` tela cheia, `V` estilo, `←`/`→` ±10s. |
+| 🎚 **Mixer** | Equalizador de 10 bandas com presets (Graves+, Rock, Pop, Eletrônica, Funk/Hip-hop, Vocal…), pré-amplificação e balanço esquerda/direita. |
 | 🌗 **Tema claro / escuro / sistema** | Segue o modo do seu computador ou fica fixo do jeito que você preferir. |
 | ♻️ **Continua de onde parou** | Se fechar no meio, é só baixar de novo: o que já terminou é pulado. |
 | 🔄 **Atualização automática** | O app baixa as versões novas em segundo plano, sem interromper o que você está fazendo, e instala quando você fechar. O motor de download ([yt-dlp](https://github.com/yt-dlp/yt-dlp)) também se atualiza sozinho. |
