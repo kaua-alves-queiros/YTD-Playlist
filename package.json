@@ -15,6 +15,7 @@
     "dist:linux": "electron-builder --linux"
   },
   "dependencies": {
+    "electron-updater": "^6.8.11",
     "ffmpeg-static": "^5.2.0"
   },
   "devDependencies": {
@@ -39,7 +40,14 @@
     "directories": {
       "output": "dist"
     },
-    "publish": null,
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "kaua-alves-queiros",
+        "repo": "YTD-Playlist",
+        "releaseType": "release"
+      }
+    ],
     "win": {
       "target": [
         "nsis",

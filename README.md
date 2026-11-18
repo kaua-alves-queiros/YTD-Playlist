@@ -35,7 +35,7 @@ Para Windows, macOS e Linux.
 | 🎧 **Biblioteca + player** | Ouça o que já baixou sem sair do app: aleatório, repetir, barra de tempo, volume e teclas de mídia do teclado. |
 | 🌗 **Tema claro / escuro / sistema** | Segue o modo do seu computador ou fica fixo do jeito que você preferir. |
 | ♻️ **Continua de onde parou** | Se fechar no meio, é só baixar de novo: o que já terminou é pulado. |
-| 🔄 **Sempre atualizado** | O motor de download ([yt-dlp](https://github.com/yt-dlp/yt-dlp)) se atualiza sozinho toda vez que o app abre. |
+| 🔄 **Atualização automática** | O app baixa as versões novas em segundo plano, sem interromper o que você está fazendo, e instala quando você fechar. O motor de download ([yt-dlp](https://github.com/yt-dlp/yt-dlp)) também se atualiza sozinho. |
 
 ## 📸 Capturas de tela
 
@@ -123,6 +123,17 @@ São vídeos privados, removidos ou bloqueados na sua região. O YouTube não de
 <summary><b>Quantos downloads simultâneos devo usar?</b></summary>
 
 O padrão é 2. Dá pra aumentar em **⚙ Configurações**, mas com muitos ao mesmo tempo (mais de 5 ou 6) o YouTube pode limitar a velocidade ou bloquear temporariamente. Se começarem a aparecer erros, diminua.
+</details>
+
+<details>
+<summary><b>Como funciona a atualização automática?</b></summary>
+
+O app verifica os [Releases](https://github.com/kaua-alves-queiros/YTD-Playlist/releases) alguns segundos depois de abrir e depois a cada 4 horas. Tudo acontece em segundo plano, e você pode continuar baixando e ouvindo normalmente.
+
+- **Windows (instalador) e Linux (AppImage):** a versão nova é baixada sozinha e instalada quando você fechar o app. Se quiser, clique em **Reiniciar agora**.
+- **Windows portátil, .deb e macOS:** aparece um aviso com o botão **Baixar versão nova**, que abre a página do Release.
+
+Dá pra desligar em **⚙ Configurações → Atualizações**.
 </details>
 
 <details>

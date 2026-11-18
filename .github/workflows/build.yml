@@ -63,6 +63,9 @@ jobs:
           # Sem certificado de assinatura: o macOS recebe assinatura ad-hoc.
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
 
+      # Além dos instaladores, envia os arquivos que o auto-update lê:
+      # latest.yml (Windows), latest-linux*.yml (AppImage) e os .blockmap (download só do que mudou).
+      # O macOS não se atualiza sozinho sem assinatura paga, então o latest-mac.yml fica de fora.
       - uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.name }}
@@ -71,6 +74,11 @@ jobs:
             dist/*.dmg
             dist/*.AppImage
             dist/*.deb
+            dist/latest*.yml
+            dist/*.blockmap
+            !dist/latest-mac.yml
+            !dist/*.dmg.blockmap
+            !dist/*.zip.blockmap
           if-no-files-found: error
           retention-days: 14
 
@@ -87,8 +95,11 @@ jobs:
           path: artifacts
           merge-multiple: true
 
-      - name: Listar arquivos
-        run: ls -la artifacts
+      - name: Conferir arquivos de atualização
+        run: |
+          ls -la artifacts
+          test -f artifacts/latest.yml || { echo "::error::latest.yml (Windows) não foi gerado"; exit 1; }
+          test -f artifacts/latest-linux.yml || { echo "::error::latest-linux.yml não foi gerado"; exit 1; }
 
       - uses: softprops/action-gh-release@v2
         with:

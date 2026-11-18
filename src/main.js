@@ -6,6 +6,7 @@ import { Readable } from 'node:stream';
 import { fileURLToPath } from 'node:url';
 import ffmpegStatic from 'ffmpeg-static';
 import { ytdlpPath, downloadYtDlp, run, killTree, buildDownloadArgs } from './ytdlp.js';
+import { setupUpdater } from './updater.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Permite rodar uma instância isolada (testes) sem tocar nos dados normais.
@@ -91,6 +92,9 @@ ipcMain.handle('init', async () => {
     quality: s.quality || 'best',
     hasYtDlp: fs.existsSync(ytdlpPath(binDir)),
     theme: s.theme || 'system',
+    autoUpdate: s.autoUpdate !== false,
+    version: app.getVersion(),
+    update: updater?.getState() || null,
     maxParallel,
     platform: process.platform,
   };
@@ -106,6 +110,8 @@ ipcMain.handle('set-setting', (_e, key, value) => {
   if (key === 'theme' && THEMES.includes(value)) {
     saveSettings({ theme: value });
     applyTheme(value);
+  } else if (key === 'autoUpdate') {
+    saveSettings({ autoUpdate: Boolean(value) });
   } else if (key === 'maxParallel') {
     maxParallel = Math.max(1, Math.floor(Number(value)) || 1);
     saveSettings({ maxParallel });
@@ -506,12 +512,19 @@ function serveMedia(request) {
   });
 }
 
+// ---------- atualização automática ----------
+let updater = null;
+ipcMain.handle('update-check', () => updater?.check());
+ipcMain.handle('update-install', () => updater?.installNow());
+ipcMain.handle('update-open-page', () => updater?.openPage());
+
 // ---------- ciclo de vida ----------
 
 app.whenReady().then(() => {
   protocol.handle('ytd-media', serveMedia);
   applyTheme(loadSettings().theme);
   createWindow();
+  updater = setupUpdater({ send, getAutoUpdate: () => loadSettings().autoUpdate !== false });
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });

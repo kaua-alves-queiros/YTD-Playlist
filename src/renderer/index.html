@@ -19,8 +19,20 @@
         <p class="sub">Baixe playlists inteiras do YouTube em MP3 ou MP4</p>
       </div>
     </div>
-    <span id="engine" class="pill">Preparando…</span>
+    <div class="top-right">
+      <button type="button" id="updPill" class="pill upd" hidden></button>
+      <span id="engine" class="pill">Preparando…</span>
+    </div>
   </header>
+
+  <div id="updBar" class="upd-bar" role="status" hidden>
+    <span id="updText"></span>
+    <div class="upd-actions">
+      <button type="button" id="updRestart" class="primary" hidden>Reiniciar agora</button>
+      <button type="button" id="updDownload" class="primary" hidden>Baixar versão nova</button>
+      <button type="button" id="updLater" class="ghost" title="Fechar aviso">✕</button>
+    </div>
+  </div>
 
   <main>
     <nav class="tabs" id="tabs">
@@ -63,6 +75,16 @@
             <button type="button" id="parMinus" title="Menos">−</button>
             <input type="number" id="parallelInput" min="1" step="1" value="2" />
             <button type="button" id="parPlus" title="Mais">+</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-t">Atualizações <span id="appVersion" class="muted small"></span></div>
+            <div class="muted small" id="updStatus">—</div>
+          </div>
+          <div class="set-actions">
+            <label class="check"><input type="checkbox" id="autoUpdate" checked /> Atualizar automaticamente</label>
+            <button type="button" id="updCheck">Verificar agora</button>
           </div>
         </div>
         <div class="set-row">

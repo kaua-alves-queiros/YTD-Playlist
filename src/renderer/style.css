@@ -233,6 +233,20 @@ select { padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
 .toast.err { background: var(--err); color: #fff; }
 body.has-player .toast { bottom: 110px; }
 
+/* ---------- atualização ---------- */
+.top-right { display: flex; gap: 8px; align-items: center; }
+.pill.upd { cursor: pointer; color: var(--accent); border-color: var(--accent); padding: 4px 12px; }
+.upd-bar {
+  margin: 6px 24px 0; padding: 8px 10px 8px 14px; border-radius: 10px;
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: color-mix(in srgb, var(--accent) 10%, var(--card)); border: 1px solid color-mix(in srgb, var(--accent) 35%, var(--border));
+}
+.upd-bar > span { flex: 1; min-width: 200px; }
+.upd-actions { display: flex; gap: 6px; align-items: center; }
+.upd-actions button { padding: 6px 12px; }
+.set-actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+@media (max-width: 700px) { .upd-bar { margin: 6px 14px 0; } }
+
 /* ---------- configurações ---------- */
 .settings { display: flex; flex-direction: column; }
 .set-row {

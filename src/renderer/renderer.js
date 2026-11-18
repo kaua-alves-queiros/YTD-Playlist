@@ -692,6 +692,71 @@ if ('mediaSession' in navigator) {
   navigator.mediaSession.setActionHandler('previoustrack', prev);
 }
 
+// ---------- atualização automática (em segundo plano, nunca bloqueia) ----------
+const upd = { state: null, dismissed: false };
+
+function renderUpdate(s) {
+  if (!s) return;
+  const prevStatus = upd.state?.status;
+  upd.state = s;
+  if (s.status !== prevStatus && (s.status === 'ready' || s.status === 'available')) upd.dismissed = false;
+
+  const v = s.version ? `v${s.version}` : '';
+  const STATUS = {
+    idle: 'Ainda não verificado.',
+    dev: 'Modo desenvolvimento: atualizações só funcionam no app instalado.',
+    checking: 'Verificando…',
+    latest: 'Você está na versão mais recente. ✓',
+    downloading: `Baixando ${v} em segundo plano… ${s.percent || 0}%`,
+    ready: `${v} pronta. Será instalada quando você fechar o app.`,
+    available: `${v} disponível para download.`,
+    error: `Não foi possível verificar agora (${s.error || 'erro'}).`,
+  };
+  $('updStatus').textContent = STATUS[s.status] || '';
+  $('appVersion').textContent = `· versão atual v${s.current}`;
+  $('updCheck').disabled = ['checking', 'downloading'].includes(s.status);
+
+  // selo discreto no topo
+  const pill = $('updPill');
+  pill.hidden = !['downloading', 'ready', 'available'].includes(s.status);
+  pill.textContent = s.status === 'downloading' ? `⬇ Atualizando ${s.percent || 0}%`
+    : s.status === 'ready' ? `✓ ${v} pronta` : `★ ${v} disponível`;
+  pill.title = STATUS[s.status] || '';
+
+  // aviso (fechável) só quando há algo pra fazer
+  const show = (s.status === 'ready' || s.status === 'available') && !upd.dismissed;
+  $('updBar').hidden = !show;
+  if (show) {
+    $('updText').textContent = s.status === 'ready'
+      ? `Atualização ${v} baixada. Ela é instalada sozinha quando você fechar o app, ou reinicie agora.`
+      : `Nova versão ${v} disponível.`;
+    $('updRestart').hidden = s.status !== 'ready';
+    $('updDownload').hidden = s.status !== 'available';
+  }
+}
+
+api.onUpdateState(renderUpdate);
+$('updLater').addEventListener('click', () => { upd.dismissed = true; $('updBar').hidden = true; });
+$('updPill').addEventListener('click', () => {
+  if (upd.state?.status === 'downloading') { showTab('settings'); return; }
+  upd.dismissed = false;
+  renderUpdate(upd.state);
+});
+$('updRestart').addEventListener('click', () => {
+  const busy = [...jobsById.values()].some(isActive);
+  if (busy) {
+    toast('Há downloads em andamento. A atualização será instalada quando você fechar o app.');
+    return;
+  }
+  api.updateInstall();
+});
+$('updDownload').addEventListener('click', () => api.updateOpenPage());
+$('updCheck').addEventListener('click', () => api.updateCheck());
+$('autoUpdate').addEventListener('change', (e) => {
+  api.setSetting('autoUpdate', e.target.checked);
+  toast(e.target.checked ? 'Atualização automática ligada' : 'Atualização automática desligada');
+});
+
 // ---------- inicialização ----------
 (async () => {
   const init = await api.init();
@@ -702,6 +767,8 @@ if ('mediaSession' in navigator) {
   renderOutDir();
   paintSeg('themeSeg', init.theme);
   $('parallelInput').value = init.maxParallel;
+  $('autoUpdate').checked = init.autoUpdate;
+  renderUpdate(init.update || { status: 'idle', current: init.version });
   state.saved = await api.savedList();
   renderSaved();
   loadLibrary();
