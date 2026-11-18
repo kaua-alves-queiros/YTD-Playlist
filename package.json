@@ -1,0 +1,78 @@
+{
+  "name": "ytd",
+  "productName": "YTD Playlist",
+  "version": "1.0.0",
+  "description": "Baixador de playlists do YouTube (MP3/MP4) para Windows, macOS e Linux",
+  "author": "kaua-alves-queiros",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder",
+    "dist:win": "electron-builder --win",
+    "dist:mac": "electron-builder --mac",
+    "dist:linux": "electron-builder --linux"
+  },
+  "dependencies": {
+    "ffmpeg-static": "^5.2.0"
+  },
+  "devDependencies": {
+    "electron": "^45.3.4",
+    "electron-builder": "^26.18.0"
+  },
+  "allowScripts": {
+    "electron@45.3.4": true,
+    "ffmpeg-static@5.3.0": true,
+    "electron-winstaller@5.4.0": true
+  },
+  "build": {
+    "appId": "com.kaua.ytd",
+    "productName": "YTD Playlist",
+    "files": [
+      "src/**/*",
+      "package.json"
+    ],
+    "asarUnpack": [
+      "node_modules/ffmpeg-static/**"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "publish": null,
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "artifactName": "YTD-Playlist-Setup-${version}-windows-${arch}.${ext}"
+    },
+    "portable": {
+      "artifactName": "YTD-Playlist-Portable-${version}-windows-${arch}.${ext}"
+    },
+    "mac": {
+      "target": [
+        "dmg"
+      ],
+      "category": "public.app-category.utilities",
+      "identity": "-",
+      "artifactName": "YTD-Playlist-${version}-mac-${arch}.${ext}"
+    },
+    "dmg": {
+      "writeUpdateInfo": false
+    },
+    "linux": {
+      "target": [
+        "AppImage",
+        "deb"
+      ],
+      "category": "AudioVideo",
+      "maintainer": "kaua-alves-queiros <noreply@users.noreply.github.com>",
+      "artifactName": "YTD-Playlist-${version}-linux-${arch}.${ext}"
+    }
+  }
+}

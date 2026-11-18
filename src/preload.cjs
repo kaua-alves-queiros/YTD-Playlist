@@ -1,0 +1,25 @@
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('ytd', {
+  init: () => ipcRenderer.invoke('init'),
+  ensureYtDlp: () => ipcRenderer.invoke('ensure-ytdlp'),
+  fetchInfo: (url) => ipcRenderer.invoke('fetch-info', url),
+  searchPlaylists: (q) => ipcRenderer.invoke('search-playlists', q),
+  savedList: () => ipcRenderer.invoke('saved-list'),
+  savedAdd: (p) => ipcRenderer.invoke('saved-add', p),
+  savedRemove: (id) => ipcRenderer.invoke('saved-remove', id),
+  libraryScan: (root) => ipcRenderer.invoke('library-scan', root),
+  mediaUrl: (p) => 'ytd-media://file/' + encodeURIComponent(p),
+  chooseFolder: (current) => ipcRenderer.invoke('choose-folder', current),
+  openPath: (p) => ipcRenderer.invoke('open-path', p),
+  openExternal: (url) => ipcRenderer.invoke('open-external', url),
+  startDownload: (opts) => ipcRenderer.invoke('start-download', opts),
+  setSetting: (key, value) => ipcRenderer.invoke('set-setting', key, value),
+  listJobs: () => ipcRenderer.invoke('list-jobs'),
+  cancelJob: (id) => ipcRenderer.invoke('cancel-job', id),
+  removeJob: (id) => ipcRenderer.invoke('remove-job', id),
+  clearFinished: () => ipcRenderer.invoke('clear-finished'),
+  onJobUpdate: (cb) => ipcRenderer.on('job-update', (_e, j) => cb(j)),
+  onSetupProgress: (cb) => ipcRenderer.on('setup-progress', (_e, p) => cb(p)),
+  onEvent: (cb) => ipcRenderer.on('dl-event', (_e, ev) => cb(ev)),
+});

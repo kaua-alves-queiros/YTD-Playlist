@@ -1,0 +1,193 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta http-equiv="Content-Security-Policy"
+        content="default-src 'self'; img-src 'self' https://*.ytimg.com data:; media-src ytd-media:; style-src 'self'; script-src 'self'" />
+  <title>YTD Playlist</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="top">
+    <div class="brand">
+      <svg viewBox="0 0 24 24" class="logo" aria-hidden="true">
+        <rect x="2" y="5" width="20" height="14" rx="4" />
+        <path d="M10 9.2v5.6l4.8-2.8z" />
+      </svg>
+      <div>
+        <h1>YTD Playlist</h1>
+        <p class="sub">Baixe playlists inteiras do YouTube em MP3 ou MP4</p>
+      </div>
+    </div>
+    <span id="engine" class="pill">Preparando…</span>
+  </header>
+
+  <main>
+    <nav class="tabs" id="tabs">
+      <button type="button" data-tab="link" class="on">🔗 Link</button>
+      <button type="button" data-tab="search">🔍 Buscar playlists</button>
+      <button type="button" data-tab="saved">★ Salvas <span id="savedCount" class="count"></span></button>
+      <button type="button" data-tab="library">🎧 Biblioteca <span id="libCount" class="count"></span></button>
+      <button type="button" data-tab="downloads" id="dlTab">⬇ Downloads <span id="dlCount" class="count"></span></button>
+      <button type="button" data-tab="settings" class="tab-right">⚙ Configurações</button>
+    </nav>
+
+    <section class="card" data-panel="downloads" hidden>
+      <div class="lib-head">
+        <h2 class="grow-h">Downloads</h2>
+        <button type="button" id="clearFinished" hidden>Limpar concluídos</button>
+      </div>
+      <div id="jobList" class="jobs"></div>
+      <p id="jobsEmpty" class="muted center">Nenhum download ainda. Abra uma playlist e clique em <b>Baixar</b> — ela aparece aqui.</p>
+    </section>
+
+    <section class="card" data-panel="settings" hidden>
+      <div class="settings">
+        <div class="set-row">
+          <div>
+            <div class="set-t">Tema</div>
+            <div class="muted small">“Sistema” acompanha o modo claro/escuro do seu computador.</div>
+          </div>
+          <div class="seg" id="themeSeg">
+            <button type="button" data-v="light">☀️ Claro</button>
+            <button type="button" data-v="dark">🌙 Escuro</button>
+            <button type="button" data-v="system">💻 Sistema</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-t">Downloads simultâneos</div>
+            <div class="muted small">Quantas playlists baixam ao mesmo tempo. As outras esperam na fila.</div>
+          </div>
+          <div class="num">
+            <button type="button" id="parMinus" title="Menos">−</button>
+            <input type="number" id="parallelInput" min="1" step="1" value="2" />
+            <button type="button" id="parPlus" title="Mais">+</button>
+          </div>
+        </div>
+        <div class="set-row">
+          <div>
+            <div class="set-t">Pasta padrão de downloads</div>
+            <div class="muted small" id="setOutDir"></div>
+          </div>
+          <button type="button" id="setChooseDir">Alterar…</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" data-panel="library" hidden>
+      <div class="lib-head">
+        <input id="libFilter" type="search" placeholder="Filtrar músicas…" autocomplete="off" />
+        <button type="button" id="libRefresh" title="Atualizar">⟳ Atualizar</button>
+      </div>
+      <div id="libList" class="lib"></div>
+      <p id="libEmpty" class="muted center">Nenhuma música baixada ainda nesta pasta.</p>
+    </section>
+
+    <section class="card" data-panel="link">
+      <form id="urlForm" class="url-row">
+        <input id="url" type="url" placeholder="Cole o link da playlist (ou de um vídeo)…" autocomplete="off" spellcheck="false" required />
+        <button id="fetchBtn" type="submit" class="primary" disabled>Abrir</button>
+      </form>
+      <p id="urlError" class="error" hidden></p>
+    </section>
+
+    <section class="card" data-panel="search" hidden>
+      <form id="searchForm" class="url-row">
+        <input id="searchInput" type="search" placeholder="Ex.: rock anos 80, lo-fi para estudar, sertanejo 2026…" autocomplete="off" required />
+        <button id="searchBtn" type="submit" class="primary" disabled>Buscar</button>
+      </form>
+      <p id="searchError" class="error" hidden></p>
+      <div id="searchResults" class="grid"></div>
+    </section>
+
+    <section class="card" data-panel="saved" hidden>
+      <div id="savedList" class="grid"></div>
+      <p id="savedEmpty" class="muted center">Nenhuma playlist salva ainda. Abra uma playlist e clique em <b>☆ Salvar</b>.</p>
+    </section>
+
+    <section class="card options">
+      <div class="field">
+        <label>Formato</label>
+        <div class="seg" id="formatSeg">
+          <button type="button" data-v="mp3">🎵 MP3 (áudio)</button>
+          <button type="button" data-v="mp4">🎬 MP4 (vídeo)</button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="quality">Qualidade</label>
+        <select id="quality"></select>
+      </div>
+      <div class="field grow">
+        <label>Tudo é salvo em <span class="muted small">(muda em ⚙ Configurações)</span></label>
+        <div class="folder">
+          <span id="outDir" class="path" title=""></span>
+          <button type="button" id="openDir" title="Abrir pasta">📂</button>
+        </div>
+      </div>
+    </section>
+
+    <section id="listCard" class="card list-card" hidden>
+      <div class="list-head">
+        <div>
+          <h2 id="plTitle"></h2>
+          <p id="plMeta" class="muted"></p>
+        </div>
+        <div class="actions">
+          <button id="saveBtn" type="button" hidden>☆ Salvar</button>
+          <label class="check"><input type="checkbox" id="selectAll" checked /> Todos</label>
+          <button id="cancelBtn" class="danger" hidden>Cancelar</button>
+          <button id="downloadBtn" class="primary">Baixar</button>
+        </div>
+      </div>
+
+      <div id="overall" class="overall" hidden>
+        <div class="bar"><div id="overallFill"></div></div>
+        <span id="overallText"></span>
+      </div>
+
+      <ul id="items" class="items"></ul>
+    </section>
+
+    <section id="empty" class="empty">
+      <p>Cole um link de playlist, pesquise em <b>Buscar playlists</b> ou abra uma das suas <b>Salvas</b>.</p>
+      <p class="muted">Ex.: https://www.youtube.com/playlist?list=…</p>
+    </section>
+
+    <details class="log">
+      <summary>Log</summary>
+      <pre id="log"></pre>
+    </details>
+  </main>
+
+  <div id="toast" class="toast" role="status"></div>
+
+  <footer id="player" class="player" hidden>
+    <video id="media" class="pvideo" playsinline hidden></video>
+    <div class="pinfo">
+      <div id="pTitle" class="ptitle"></div>
+      <div id="pSub" class="psub"></div>
+    </div>
+    <div class="pcenter">
+      <div class="pbtns">
+        <button type="button" id="pShuffle" class="ghost" title="Aleatório">🔀</button>
+        <button type="button" id="pPrev" class="ghost" title="Anterior">⏮</button>
+        <button type="button" id="pPlay" class="round" title="Tocar/pausar">▶</button>
+        <button type="button" id="pNext" class="ghost" title="Próxima">⏭</button>
+        <button type="button" id="pRepeat" class="ghost" title="Repetir">🔁</button>
+      </div>
+      <div class="pseek">
+        <span id="pCur">0:00</span>
+        <input type="range" id="pSeek" min="0" max="1000" value="0" />
+        <span id="pDur">0:00</span>
+      </div>
+    </div>
+    <div class="pvol">
+      <button type="button" id="pMute" class="ghost" title="Mudo">🔊</button>
+      <input type="range" id="pVol" min="0" max="100" value="80" />
+    </div>
+  </footer>
+
+  <script src="renderer.js"></script>
+</body>
+</html>
