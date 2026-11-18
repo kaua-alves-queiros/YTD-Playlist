@@ -227,7 +227,7 @@ function syncFsInfo() {
   const f = current();
   if (!f) return;
   $('fsTitle').textContent = f.title;
-  $('fsSub').textContent = `${player.folder} · ${player.pos + 1} de ${player.queue.length}`;
+  $('fsSub').textContent = subLabel();
   if (fs.open) {
     const fsEl = $('fs');
     if (f.video && media.parentElement !== fsEl) { fsEl.appendChild(media); }

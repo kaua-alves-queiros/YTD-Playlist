@@ -564,6 +564,7 @@ const lib = { groups: [], loaded: false, closed: new Set() };
 
 async function loadLibrary() {
   lib.groups = await api.libraryScan(state.outDir);
+  for (const g of lib.groups) for (const file of g.files) file.folder = g.folder; // cada faixa sabe de qual playlist é
   lib.loaded = true;
   const total = lib.groups.reduce((a, g) => a + g.files.length, 0);
   $('libCount').textContent = total ? `(${total})` : '';
@@ -609,6 +610,20 @@ function renderLibrary() {
 $('libFilter').addEventListener('input', renderLibrary);
 $('libRefresh').addEventListener('click', loadLibrary);
 
+// Aleatório de tudo: junta as músicas de todas as playlists (respeitando o filtro, se houver) e embaralha.
+const ALL_LABEL = 'Todas as playlists';
+$('libShuffleAll').addEventListener('click', () => {
+  const q = $('libFilter').value.trim().toLowerCase();
+  const files = lib.groups.flatMap((g) => g.files).filter((x) => !q || (x.title + ' ' + x.folder).toLowerCase().includes(q));
+  if (!files.length) { toast('Nenhuma música na biblioteca ainda.'); return; }
+  player.shuffle = true;
+  $('pShuffle').classList.add('on');
+  playQueue(files, Math.floor(Math.random() * files.length), ALL_LABEL);
+  if (typeof syncFsState === 'function') syncFsState();
+  const nPl = new Set(files.map((x) => x.folder)).size;
+  toast(`🔀 Tocando ${files.length} músicas de ${nPl} playlist${nPl > 1 ? 's' : ''} em ordem aleatória`);
+});
+
 // ---------- player ----------
 const media = $('media');
 const player = { queue: [], order: [], pos: -1, folder: '', shuffle: false, repeat: 'off', seeking: false };
@@ -624,6 +639,12 @@ function buildOrder(startIdx) {
   player.pos = player.order.indexOf(startIdx);
 }
 const current = () => player.queue[player.order[player.pos]];
+// Subtítulo do player: a playlist da faixa atual (no aleatório de tudo, cada uma mostra a sua).
+function subLabel() {
+  const f = current();
+  const where = player.folder === ALL_LABEL ? `${f?.folder || ''} · 🔀 todas as playlists` : player.folder;
+  return `${where} · ${player.pos + 1} de ${player.queue.length}`;
+}
 
 function playQueue(files, idx, folder) {
   player.queue = files.slice();
@@ -641,11 +662,11 @@ function loadCurrent(autoplay) {
   media.src = api.mediaUrl(f.path);
   $('pTitle').textContent = f.title;
   $('pTitle').title = f.title;
-  $('pSub').textContent = `${player.folder} · ${player.pos + 1} de ${player.queue.length}`;
+  $('pSub').textContent = subLabel();
   if (autoplay) media.play().catch((e) => log('Player: ' + e.message));
   markPlaying();
   if ('mediaSession' in navigator) {
-    navigator.mediaSession.metadata = new MediaMetadata({ title: f.title, album: player.folder, artist: '' });
+    navigator.mediaSession.metadata = new MediaMetadata({ title: f.title, album: f.folder || player.folder, artist: '' });
   }
 }
 
@@ -704,7 +725,7 @@ $('pShuffle').addEventListener('click', () => {
   player.shuffle = !player.shuffle;
   $('pShuffle').classList.toggle('on', player.shuffle);
   if (player.queue.length) buildOrder(player.order[player.pos]);
-  $('pSub').textContent = `${player.folder} · ${player.pos + 1} de ${player.queue.length}`;
+  $('pSub').textContent = subLabel();
 });
 $('pRepeat').addEventListener('click', () => {
   player.repeat = { off: 'all', all: 'one', one: 'off' }[player.repeat];
