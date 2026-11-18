@@ -27,7 +27,9 @@ const defaultOutDir = () => path.join(app.getPath('downloads'), 'YTD Playlist');
 function getOutDir() {
   const d = loadSettings().outDir;
   // ignora pastas temporárias ou inválidas e volta pro padrão
-  if (!d || !path.isAbsolute(d) || isInside(path.resolve(d), path.resolve(app.getPath('temp')))) return defaultOutDir();
+  if (!d || !path.isAbsolute(d)) return defaultOutDir();
+  // (instâncias isoladas via YTD_USER_DATA podem usar pastas temporárias)
+  if (!process.env.YTD_USER_DATA && isInside(path.resolve(d), path.resolve(app.getPath('temp')))) return defaultOutDir();
   return d;
 }
 
