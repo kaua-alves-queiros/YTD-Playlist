@@ -7,6 +7,7 @@ import { fileURLToPath } from 'node:url';
 import ffmpegStatic from 'ffmpeg-static';
 import { ytdlpPath, downloadYtDlp, run, killTree, buildDownloadArgs } from './ytdlp.js';
 import { setupUpdater } from './updater.js';
+import { findExisting, recordDownload } from './library-index.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 // Permite rodar uma instância isolada (testes) sem tocar nos dados normais.
@@ -280,7 +281,14 @@ function pump() {
 function runJob(j) {
   j.status = 'running';
   pushJob(j, true);
-  const args = buildDownloadArgs({ ...j.opts, ffmpeg, jsRuntime });
+  // arquivo de IDs já baixados: o yt-dlp pula esses sem baixar de novo
+  const archive = path.join(app.getPath('userData'), 'archives', 'job-' + j.id + '.txt');
+  try {
+    fs.mkdirSync(path.dirname(archive), { recursive: true });
+    fs.writeFileSync(archive, [...j.preExisting.values()].map((x) => 'youtube ' + x.id + '\n').join(''));
+  } catch {}
+  j.archive = archive;
+  const args = buildDownloadArgs({ ...j.opts, ffmpeg, jsRuntime, archive });
   const proc = spawn(ytdlpPath(binDir), args, { env: childEnv, windowsHide: true });
   j.proc = proc;
   const ev = (data) => send('dl-event', { jobId: j.id, ...data });
@@ -288,7 +296,7 @@ function runJob(j) {
     const prev = j.states.get(index);
     if (prev === 'done' || prev === 'failed') return;
     j.states.set(index, s);
-    if (s === 'done') j.done++;
+    if (s === 'done' || s === 'skipped') j.done++;
     if (s === 'failed') j.failed++;
   };
 
@@ -319,6 +327,7 @@ function runJob(j) {
       case 'DONE':
         setState(index, 'done');
         j.lastFile = rest.join('|');
+        recordDownload(j.outDir, j.format, j.indexToId.get(index), j.lastFile);
         ev({ type: 'done', index, file: j.lastFile });
         break;
       default:
@@ -356,9 +365,11 @@ function runJob(j) {
     for (const index of j.indexes) {
       const s = j.states.get(index);
       if (s === 'done' || s === 'failed') continue;
-      if (j.cancelled) j.states.set(index, 'cancelled');
+      if (j.preExisting.has(index)) setState(index, 'skipped');
+      else if (j.cancelled) j.states.set(index, 'cancelled');
       else setState(index, 'failed');
     }
+    try { fs.unlinkSync(j.archive); } catch {}
     j.status = j.cancelled ? 'cancelled' : error ? 'error' : j.failed ? 'partial' : 'done';
     j.error = error || null;
     ev({ type: 'finished', code, cancelled: j.cancelled, error });
@@ -384,6 +395,8 @@ ipcMain.handle('start-download', async (_e, opts) => {
     opts: { url: opts.url, format: opts.format, quality: opts.quality, outDir: opts.outDir, items: opts.items },
     indexes: entries.map((e) => e.index),
     idToIndex: new Map(entries.map((e) => [e.id, e.index])),
+    indexToId: new Map(entries.map((e) => [e.index, e.id])),
+    preExisting: findExisting(opts.outDir, { folderTitle: opts.folderTitle, format: opts.format, entries }),
     total: entries.length || 1, done: 0, failed: 0,
     states: new Map(entries.map((e) => [e.index, 'queued'])),
     status: 'queued', current: null, lastFile: null, error: null, cancelled: false,
@@ -393,6 +406,12 @@ ipcMain.handle('start-download', async (_e, opts) => {
   pushJob(j, true);
   pump();
   return publicJob(j);
+});
+
+// Antes de baixar: quais músicas desta playlist já estão na pasta?
+ipcMain.handle('check-existing', (_e, { folderTitle, format, entries }) => {
+  const found = findExisting(getOutDir(), { folderTitle, format, entries: Array.isArray(entries) ? entries : [] });
+  return Object.fromEntries([...found].map(([index, x]) => [index, { folder: x.folder, file: x.file }]));
 });
 
 ipcMain.handle('list-jobs', () => [...jobs.values()].map(publicJob));

@@ -64,6 +64,7 @@ $('formatSeg').addEventListener('click', (e) => {
   if (!v || state.running) return;
   state.format = v;
   renderQuality();
+  markExisting(); // MP3 e MP4 são verificados separadamente
 });
 $('quality').addEventListener('change', (e) => (state.quality = e.target.value));
 
@@ -134,6 +135,7 @@ async function openPlaylist(url) {
     const j = findJobFor(info);
     state.viewJobId = j?.id ?? null;
     applyJobToList(j);
+    markExisting();
   } catch (err) {
     const msg = cleanErr(err);
     $('urlError').textContent = msg;
@@ -340,9 +342,53 @@ function applyJobToList(j) {
     else if (s === 'done') showFile(it, null);
     else if (s === 'failed') setItem(it, 'failed', '✕ erro');
     else if (s === 'cancelled') setItem(it, '', 'cancelado');
+    else if (s === 'skipped') setItem(it, 'done', '✓ já baixado', 100);
   }
   updateViewHeader();
 }
+
+const folderTitleOf = (pl) => (pl?.isPlaylist ? pl.title : 'Downloads');
+
+// Verifica ANTES de baixar quais músicas já estão na pasta (pelo ID do vídeo).
+// Essas aparecem como "✓ já baixado" e ficam desmarcadas.
+async function markExisting() {
+  const pl = state.playlist;
+  if (!pl) return;
+  const format = state.format;
+  const entries = [...state.items.values()]
+    .filter((it) => !it.entry.unavailable)
+    .map((it) => ({ index: it.entry.index, id: it.entry.id, title: it.entry.title }));
+  let found = {};
+  try { found = await api.checkExisting({ folderTitle: folderTitleOf(pl), format, entries }); } catch {}
+  if (state.playlist !== pl || state.format !== format) return; // usuário trocou de playlist/formato no meio
+  const job = jobsById.get(state.viewJobId);
+  const busy = isActive(job);
+  let n = 0;
+  for (const it of state.items.values()) {
+    const ex = found[it.entry.index];
+    if (ex) {
+      n++;
+      it.existing = true;
+      if (it.state === 'active' || (busy && job.states?.[it.entry.index] === 'queued')) continue;
+      it.cb.checked = false;
+      const other = ex.folder && ex.folder !== '.' && ex.folder !== it.existingFolderHint ? ex.folder : '';
+      setItem(it, 'done', '', 100);
+      it.status.append('✓ já baixado ');
+      const btn = el('button', null, 'Mostrar');
+      btn.title = ex.file;
+      btn.addEventListener('click', () => api.openPath(ex.file));
+      it.status.append(btn);
+      if (other && norm(other) !== norm(folderTitleOf(pl))) it.status.title = `Já está em: ${other}`;
+    } else if (it.existing) {
+      // estava marcado como baixado (ex.: no outro formato) e não está mais
+      it.existing = false;
+      if (!busy) { setItem(it, '', '', 0); it.cb.checked = true; }
+    }
+  }
+  syncSelectAll();
+  if (n) toast(`${n} música${n > 1 ? 's' : ''} desta playlist já ${n > 1 ? 'estão baixadas' : 'está baixada'} em ${format.toUpperCase()} e não ${n > 1 ? 'serão baixadas' : 'será baixada'} de novo.`);
+}
+const norm = (s) => String(s || '').normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '');
 
 function jobPct(j) {
   const cur = j.status === 'running' && j.current ? (j.current.percent || 0) / 100 : 0;
@@ -373,7 +419,8 @@ $('downloadBtn').addEventListener('click', async () => {
       quality: state.quality,
       outDir: state.outDir,
       items: pl.isPlaylist && !all ? sel.map((it) => it.entry.index) : null,
-      entries: sel.map((it) => ({ index: it.entry.index, id: it.entry.id })),
+      folderTitle: folderTitleOf(pl),
+      entries: sel.map((it) => ({ index: it.entry.index, id: it.entry.id, title: it.entry.title })),
     });
     jobsById.set(job.id, job);
     state.viewJobId = job.id;
@@ -427,7 +474,7 @@ api.onJobUpdate((j) => {
     const prev = jobsById.get(j.id);
     jobsById.set(j.id, j);
     // quando o job termina, marca na lista os que ficaram sem baixar
-    if (j.id === state.viewJobId && prev && isActive(prev) && !isActive(j)) applyJobToList(j);
+    if (j.id === state.viewJobId && prev && isActive(prev) && !isActive(j)) { applyJobToList(j); markExisting(); }
   }
   if (j.id === state.viewJobId) updateViewHeader();
   renderDownloads();

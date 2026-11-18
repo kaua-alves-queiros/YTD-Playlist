@@ -55,7 +55,7 @@ export function killTree(proc) {
   else proc.kill('SIGTERM');
 }
 
-export function buildDownloadArgs({ url, format, quality, outDir, items, ffmpeg, jsRuntime }) {
+export function buildDownloadArgs({ url, format, quality, outDir, items, ffmpeg, jsRuntime, archive }) {
   const args = [
     '--newline', '--progress', '--quiet', '--no-simulate',
     '--ignore-errors', '--yes-playlist', '--no-overwrites', '--windows-filenames',
@@ -71,6 +71,8 @@ export function buildDownloadArgs({ url, format, quality, outDir, items, ffmpeg,
     '--embed-metadata',
   ];
   if (jsRuntime) args.push('--js-runtimes', jsRuntime);
+  // IDs já baixados: o yt-dlp pula antes mesmo de começar o download
+  if (archive) args.push('--download-archive', archive);
   if (items?.length) args.push('--playlist-items', items.join(','));
 
   if (format === 'mp3') {

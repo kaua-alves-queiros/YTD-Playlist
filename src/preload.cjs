@@ -19,6 +19,7 @@ contextBridge.exposeInMainWorld('ytd', {
   updateInstall: () => ipcRenderer.invoke('update-install'),
   updateOpenPage: () => ipcRenderer.invoke('update-open-page'),
   onUpdateState: (cb) => ipcRenderer.on('update-state', (_e, s) => cb(s)),
+  checkExisting: (q) => ipcRenderer.invoke('check-existing', q),
   listJobs: () => ipcRenderer.invoke('list-jobs'),
   cancelJob: (id) => ipcRenderer.invoke('cancel-job', id),
   removeJob: (id) => ipcRenderer.invoke('remove-job', id),
